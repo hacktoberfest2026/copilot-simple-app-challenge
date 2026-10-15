@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#e7ece5">
+  <title>Fieldnotes — a little room to think</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20352f;
+      --muted: #78837a;
+      --line: #dce2d9;
+      --paper: #fbfcf8;
+      --canvas: #f2f4ef;
+      --sidebar: #e7ece5;
+      --green: #315d4f;
+      --green-dark: #23483d;
+      --coral: #c8614c;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "DM Sans", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--canvas);
+      background-image: repeating-linear-gradient(115deg, transparent 0 14px, rgb(46 74 61 / 2%) 14px 15px);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 296px minmax(0, 1fr);
+      min-height: 100vh;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      padding: 31px 22px 22px;
+      background: var(--sidebar);
+      border-right: 1px solid #d9e0d7;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 7px;
+      color: var(--green-dark);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .brand-mark {
+      position: relative;
+      width: 25px;
+      height: 25px;
+      border: 1.5px solid var(--green);
+      border-radius: 50%;
+    }
+
+    .brand-mark::before, .brand-mark::after {
+      position: absolute;
+      content: "";
+      border: 1px solid var(--coral);
+      border-radius: 50%;
+    }
+
+    .brand-mark::before { inset: 5px -4px 5px 8px; }
+    .brand-mark::after { inset: 8px 5px 5px 5px; border-color: var(--green); }
+
+    .sidebar-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 54px 7px 15px;
+    }
+
+    .sidebar-heading h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 24px;
+      font-weight: 400;
+    }
+
+    .entry-count { color: var(--muted); font-size: 12px; }
+
+    .new-entry {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: 100%;
+      min-height: 43px;
+      border: 0;
+      border-radius: 5px;
+      background: var(--green);
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background .18s ease, transform .18s ease;
+    }
+
+    .new-entry:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .plus { font-size: 19px; font-weight: 400; line-height: 1; }
+
+    .search-wrap { position: relative; margin: 19px 0 20px; }
+
+    .search-wrap::before {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      width: 11px;
+      height: 11px;
+      border: 1.5px solid #849087;
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
+    }
+
+    .search-wrap::after {
+      position: absolute;
+      top: 23px;
+      left: 23px;
+      width: 5px;
+      border-top: 1.5px solid #849087;
+      content: "";
+      transform: rotate(45deg);
+      transform-origin: left;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px 0 36px;
+      border: 1px solid #d6ddd4;
+      border-radius: 4px;
+      outline: none;
+      background: rgb(251 252 248 / 72%);
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .search-input:focus { border-color: #7e9b89; box-shadow: 0 0 0 2px rgb(49 93 79 / 10%); }
+    .search-input::placeholder { color: #8a958b; }
+
+    .list-label {
+      margin: 0 7px 9px;
+      color: #7d887e;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .entry-list { display: grid; gap: 4px; overflow-y: auto; }
+
+    .entry-item {
+      display: grid;
+      gap: 5px;
+      width: 100%;
+      padding: 11px 10px;
+      border: 0;
+      border-left: 2px solid transparent;
+      border-radius: 0 4px 4px 0;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .entry-item:hover { background: rgb(251 252 248 / 57%); }
+    .entry-item.active { border-left-color: var(--coral); background: rgb(251 252 248 / 84%); }
+    .entry-item-title { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-item-meta { color: var(--muted); font-size: 11px; }
+
+    .empty-list {
+      margin: 5px 7px;
+      color: #7e897f;
+      font-family: var(--serif);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .sidebar-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: auto 7px 3px;
+      padding-top: 20px;
+      color: #718076;
+      font-size: 11px;
+    }
+
+    .privacy-dot { width: 7px; height: 7px; border-radius: 50%; background: #6b9875; }
+
+    .main {
+      min-width: 0;
+      padding: 28px clamp(22px, 6.5vw, 100px) 54px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 850px;
+      margin: 0 auto;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .topbar-note { display: flex; align-items: center; gap: 8px; }
+    .sun-mark { color: var(--coral); font-size: 16px; }
+    .save-status { min-width: 76px; text-align: right; }
+    .save-status[data-state="saved"] { color: var(--green); }
+
+    .editor {
+      max-width: 700px;
+      margin: clamp(46px, 9vh, 92px) auto 0;
+      animation: arrive .42s ease both;
+    }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .date-line {
+      margin-bottom: 22px;
+      color: var(--coral);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .title-input {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: clamp(34px, 5vw, 49px);
+      font-weight: 400;
+      line-height: 1.16;
+    }
+
+    .title-input::placeholder { color: #a3ada3; }
+
+    .editor-tools {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-height: 54px;
+      margin-top: 18px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .mood-label { color: #89938a; }
+
+    .mood-select {
+      max-width: 160px;
+      padding: 5px 22px 5px 0;
+      border: 0;
+      outline: 0;
+      background-color: transparent;
+      color: var(--green-dark);
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .tool-spacer { flex: 1; }
+    .word-count { color: #89938a; font-variant-numeric: tabular-nums; }
+
+    .delete-entry {
+      padding: 6px 0 6px 10px;
+      border: 0;
+      background: transparent;
+      color: #9a6256;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    .delete-entry:hover { color: #a44131; }
+    .delete-entry[hidden] { display: none; }
+
+    .body-input {
+      display: block;
+      width: 100%;
+      min-height: min(48vh, 430px);
+      margin-top: 24px;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      resize: vertical;
+      background: transparent;
+      color: #35463f;
+      font-family: var(--serif);
+      font-size: 19px;
+      line-height: 1.85;
+    }
+
+    .body-input::placeholder { color: #9aa49b; }
+
+    .editor-bottom {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 21px;
+      padding-top: 13px;
+      border-top: 1px solid var(--line);
+      color: #8b958c;
+      font-size: 10px;
+    }
+
+    @media (max-width: 700px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        min-height: auto;
+        padding: 18px 18px 12px;
+        border-right: 0;
+        border-bottom: 1px solid #d9e0d7;
+      }
+      .sidebar-heading { margin: 22px 2px 12px; }
+      .sidebar-heading h1 { font-size: 21px; }
+      .new-entry { min-height: 40px; }
+      .search-wrap { margin: 12px 0; }
+      .list-label { margin-bottom: 5px; }
+      .entry-list { max-height: 160px; }
+      .empty-list { margin: 2px 7px 7px; }
+      .sidebar-foot { display: none; }
+      .main { padding: 17px 21px 38px; }
+      .topbar { padding-bottom: 13px; }
+      .editor { margin-top: 42px; }
+      .body-input { min-height: 38vh; font-size: 18px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Journal entries">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span> Fieldnotes</div>
+      <div class="sidebar-heading">
+        <h1>Your journal</h1>
+        <span class="entry-count" id="entryCount">0 entries</span>
+      </div>
+      <button class="new-entry" id="newEntry" type="button"><span class="plus" aria-hidden="true">+</span> New entry</button>
+      <label class="search-wrap">
+        <span class="sr-only" hidden>Search entries</span>
+        <input class="search-input" id="searchInput" type="search" placeholder="Find a thought..." autocomplete="off" aria-label="Search entries">
+      </label>
+      <p class="list-label">Recent entries</p>
+      <nav class="entry-list" id="entryList" aria-label="Recent entries"></nav>
+      <div class="sidebar-foot"><span class="privacy-dot" aria-hidden="true"></span> Just for you, on this device</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-note"><span class="sun-mark" aria-hidden="true">✳</span><span>A little room to think</span></div>
+        <span class="save-status" id="saveStatus" aria-live="polite">Not saved</span>
+      </header>
+      <section class="editor" aria-label="Journal editor">
+        <div class="date-line" id="dateLine"></div>
+        <input class="title-input" id="titleInput" type="text" maxlength="120" placeholder="Give today a title..." aria-label="Entry title">
+        <div class="editor-tools">
+          <span class="mood-label">Today feels</span>
+          <select class="mood-select" id="moodSelect" aria-label="How today feels">
+            <option value="">Choose a mood</option>
+            <option value="Calm">Calm</option>
+            <option value="Curious">Curious</option>
+            <option value="Grateful">Grateful</option>
+            <option value="Hopeful">Hopeful</option>
+            <option value="Tired">Tired</option>
+            <option value="Uncertain">Uncertain</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="tool-spacer"></span>
+          <span class="word-count" id="wordCount">0 words</span>
+          <button class="delete-entry" id="deleteEntry" type="button" hidden>Delete entry</button>
+        </div>
+        <textarea class="body-input" id="bodyInput" placeholder="Start anywhere. What’s on your mind?" aria-label="Entry text"></textarea>
+        <footer class="editor-bottom"><span>Take your time.</span><span id="entryDate"></span></footer>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      const storageKey = "fieldnotes.entries.v1";
+      const titleInput = document.querySelector("#titleInput");
+      const bodyInput = document.querySelector("#bodyInput");
+      const moodSelect = document.querySelector("#moodSelect");
+      const searchInput = document.querySelector("#searchInput");
+      const entryList = document.querySelector("#entryList");
+      const entryCount = document.querySelector("#entryCount");
+      const saveStatus = document.querySelector("#saveStatus");
+      const dateLine = document.querySelector("#dateLine");
+      const entryDate = document.querySelector("#entryDate");
+      const wordCount = document.querySelector("#wordCount");
+      const deleteButton = document.querySelector("#deleteEntry");
+      let entries = loadEntries();
+      let activeId = null;
+      let draft = makeDraft();
+      let saveTimer;
+
+      function makeDraft() {
+        const now = new Date().toISOString();
+        return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: "", body: "", mood: "", createdAt: now, updatedAt: now };
+      }
+
+      function loadEntries() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(storageKey) || "[]");
+          return Array.isArray(stored) ? stored.filter((entry) => entry && typeof entry.id === "string") : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function currentEntry() {
+        return activeId ? entries.find((entry) => entry.id === activeId) || draft : draft;
+      }
+
+      function formatDate(value, options) {
+        return new Intl.DateTimeFormat(undefined, options).format(new Date(value));
+      }
+
+      function updateDate() {
+        const now = new Date();
+        dateLine.textContent = formatDate(now, { weekday: "long", month: "long", day: "numeric" });
+        entryDate.textContent = formatDate(now, { month: "short", day: "numeric", year: "numeric" });
+      }
+
+      function setStatus(text, state = "") {
+        saveStatus.textContent = text;
+        saveStatus.dataset.state = state;
+      }
+
+      function renderList() {
+        const query = searchInput.value.trim().toLocaleLowerCase();
+        const visibleEntries = [...entries]
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+          .filter((entry) => `${entry.title} ${entry.body} ${entry.mood}`.toLocaleLowerCase().includes(query));
+        entryCount.textContent = `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`;
+        entryList.replaceChildren();
+
+        if (!visibleEntries.length) {
+          const empty = document.createElement("p");
+          empty.className = "empty-list";
+          empty.textContent = query ? "No entries match that search." : "Your pages are waiting for their first words.";
+          entryList.append(empty);
+          return;
+        }
+
+        for (const entry of visibleEntries) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `entry-item${entry.id === activeId ? " active" : ""}`;
+          button.setAttribute("aria-current", entry.id === activeId ? "page" : "false");
+          const title = document.createElement("span");
+          title.className = "entry-item-title";
+          title.textContent = entry.title.trim() || "Untitled entry";
+          const meta = document.createElement("span");
+          meta.className = "entry-item-meta";
+          meta.textContent = `${formatDate(entry.updatedAt, { month: "short", day: "numeric" })}${entry.mood ? ` · ${entry.mood}` : ""}`;
+          button.append(title, meta);
+          button.addEventListener("click", () => openEntry(entry.id));
+          entryList.append(button);
+        }
+      }
+
+      function updateWordCount() {
+        const count = bodyInput.value.trim().split(/\s+/).filter(Boolean).length;
+        wordCount.textContent = `${count} ${count === 1 ? "word" : "words"}`;
+      }
+
+      function showEntry(entry) {
+        titleInput.value = entry.title;
+        bodyInput.value = entry.body;
+        moodSelect.value = entry.mood;
+        entryDate.textContent = formatDate(entry.createdAt, { month: "short", day: "numeric", year: "numeric" });
+        deleteButton.hidden = !entries.some((saved) => saved.id === entry.id);
+        setStatus(entries.some((saved) => saved.id === entry.id) ? "Saved" : "Not saved", entries.some((saved) => saved.id === entry.id) ? "saved" : "");
+        updateWordCount();
+        renderList();
+      }
+
+      function openEntry(id) {
+        flushSave();
+        activeId = id;
+        draft = makeDraft();
+        const entry = entries.find((saved) => saved.id === id);
+        if (entry) showEntry(entry);
+      }
+
+      function startNewEntry() {
+        flushSave();
+        activeId = null;
+        draft = makeDraft();
+        showEntry(draft);
+        titleInput.focus();
+      }
+
+      function persistDraft() {
+        const entry = currentEntry();
+        entry.title = titleInput.value;
+        entry.body = bodyInput.value;
+        entry.mood = moodSelect.value;
+        if (!entry.title.trim() && !entry.body.trim()) {
+          setStatus("Not saved");
+          return;
+        }
+
+        entry.updatedAt = new Date().toISOString();
+        if (!entries.some((saved) => saved.id === entry.id)) entries.push(entry);
+        activeId = entry.id;
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(entries));
+          setStatus("Saved", "saved");
+        } catch {
+          setStatus("Couldn’t save");
+        }
+        deleteButton.hidden = false;
+        entryDate.textContent = formatDate(entry.createdAt, { month: "short", day: "numeric", year: "numeric" });
+        renderList();
+      }
+
+      function scheduleSave() {
+        setStatus("Saving...");
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(persistDraft, 450);
+      }
+
+      function flushSave() {
+        clearTimeout(saveTimer);
+        if (titleInput.value.trim() || bodyInput.value.trim()) persistDraft();
+      }
+
+      document.querySelector("#newEntry").addEventListener("click", startNewEntry);
+      searchInput.addEventListener("input", renderList);
+      titleInput.addEventListener("input", scheduleSave);
+      bodyInput.addEventListener("input", () => { updateWordCount(); scheduleSave(); });
+      moodSelect.addEventListener("change", scheduleSave);
+      deleteButton.addEventListener("click", () => {
+        clearTimeout(saveTimer);
+        const entry = currentEntry();
+        if (!entries.some((saved) => saved.id === entry.id)) return;
+        if (!window.confirm("Delete this entry? This can’t be undone.")) return;
+        entries = entries.filter((saved) => saved.id !== entry.id);
+        try { localStorage.setItem(storageKey, JSON.stringify(entries)); } catch { /* Keep the in-memory change. */ }
+        activeId = null;
+        draft = makeDraft();
+        showEntry(draft);
+        setStatus("Entry deleted");
+      });
+
+      updateDate();
+      const latest = [...entries].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))[0];
+      if (latest) openEntry(latest.id);
+      else showEntry(draft);
+    })();
+  </script>
+</body>
+</html>
